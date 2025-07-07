@@ -1,51 +1,52 @@
-import express from "express"
-import cors from 'cors'
-import 'dotenv/config'
-import connectDB from "./config/mongodb.js"
-import connectCloudinary from "./config/cloudinary.js"
-import userRouter from "./routes/userRoute.js"
-import doctorRouter from "./routes/doctorRoute.js"
-import adminRouter from "./routes/adminRoute.js"
+import express from "express";
+import cors from 'cors';
+import 'dotenv/config';
+import connectDB from "./config/mongodb.js";
+import connectCloudinary from "./config/cloudinary.js";
+import userRouter from "./routes/userRoute.js";
+import doctorRouter from "./routes/doctorRoute.js";
+import adminRouter from "./routes/adminRoute.js";
 
-// app config
-const app = express()
-const port = process.env.PORT || 4000
+// App config
+const app = express();
+const port = process.env.PORT || 4000;
 
-connectDB()
-connectCloudinary()
-// middlewares
+// Connect to DB and Cloudinary
+connectDB();
+connectCloudinary();
+
+// Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://frontend-seven-tau-41.vercel.app/"
+  "https://frontend-seven-tau-41.vercel.app"
 ];
 
-// CORS Middleware
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+// ✅ CORS middleware (applied before any routes or body parsing)
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
 
-  if (req.method === "OPTIONS") {
-      return res.status(200).end();
-  }
+// JSON parser middleware
+app.use(express.json());
 
-  next();
-});
-app.use(express.json())
-app.use(cors())
+// API routes
+app.use("/api/admin", adminRouter);
+app.use("/api/user", userRouter);
+app.use("/api/doctor", doctorRouter);
 
-// api endpoints
-app.use("/api/admin", adminRouter)
-app.use("/api/user", userRouter)
-
-app.use("/api/doctor", doctorRouter)
-
+// Root route
 app.get("/", (req, res) => {
   res.send("API Working");
-
 });
 
-app.listen(port, () => console.log(`Server started on ${port}`))
+// Start server
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+});
